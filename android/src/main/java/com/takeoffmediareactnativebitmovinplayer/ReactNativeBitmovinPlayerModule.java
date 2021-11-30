@@ -1,23 +1,69 @@
 package com.takeoffmediareactnativebitmovinplayer;
 
+import android.annotation.SuppressLint;
+import android.os.Build;
+import android.util.Log;
 import android.view.View;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleEventObserver;
+import androidx.lifecycle.LifecycleOwner;
 
 import com.bitmovin.player.PlayerView;
 import com.bitmovin.player.api.ui.ScalingMode;
+import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
-import com.facebook.react.bridge.Callback;
+import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.modules.core.DeviceEventManagerModule;
 
-public class ReactNativeBitmovinPlayerModule extends ReactContextBaseJavaModule {
-
+public class ReactNativeBitmovinPlayerModule extends ReactContextBaseJavaModule implements LifecycleEventObserver {
   private final ReactApplicationContext _reactContext;
+  private boolean isPiPMode = false;
 
   public ReactNativeBitmovinPlayerModule(ReactApplicationContext reactContext) {
     super(reactContext);
-
     _reactContext = reactContext;
+  }
+
+  private void sendEvent(String eventName, @Nullable WritableMap params) {
+    _reactContext
+      .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+      .emit(eventName, params);
+  }
+
+  @ReactMethod
+  public void registerLifecycleEventObserver() {
+    AppCompatActivity activity = (AppCompatActivity) _reactContext.getCurrentActivity();
+    if (activity != null) {
+      activity.getLifecycle().addObserver(this);
+    } else {
+      Log.d(this.getName(), "App activity is null.");
+    }
+  }
+
+  @Override
+  public void onStateChanged(@NonNull LifecycleOwner source, @NonNull Lifecycle.Event event) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      AppCompatActivity activity = (AppCompatActivity) source;
+      boolean isPiPMode = activity.isInPictureInPictureMode();
+      // Check for changes on pip state.
+      if (this.isPiPMode != isPiPMode) {
+        // Update local isPiPMode.
+        this.isPiPMode = isPiPMode;
+        Log.d(this.getName(), "Activity pip mode has changed to " + isPiPMode);
+        // Dispatch onPictureInPicutreModeChangedEvent to js.
+        WritableMap params = Arguments.createMap();
+        params.putString("PiP_event", isPiPMode ? "EnterPiP" : "ExitPiP");
+        sendEvent("onPictureInPictureModeChanged", params);
+      }
+    }
   }
 
   @Override

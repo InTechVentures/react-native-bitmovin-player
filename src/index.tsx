@@ -114,6 +114,13 @@ export default React.forwardRef<
     const playerRef = useRef();
 
     useEffect(() => {
+      if (Platform.OS === 'android') {
+        // Make native module listen for lifecycle events on the main activity.
+        ReactNativeBitmovinPlayerModule.registerLifecycleEventObserver();
+      }
+    }, []);
+
+    useEffect(() => {
       const { height } = layout || {};
 
       if (maxHeight !== null && height && !loading) {
