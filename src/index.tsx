@@ -58,7 +58,7 @@ type ReactNativeBitmovinPlayerType = {
   onFullscreenExit?: (event: any) => void;
   onControlsShow?: (event: any) => void;
   onControlsHide?: (event: any) => void;
-  onPipMode?: (event: any) => void;
+  onPipMode?: (event: { nativeEvent: { value: boolean } }) => void;
   configuration: {
     url: string;
     poster?: string;
@@ -116,7 +116,9 @@ export default React.forwardRef<
     useEffect(() => {
       if (Platform.OS === 'android') {
         // Make native module listen for lifecycle events on the main activity.
-        ReactNativeBitmovinPlayerModule.registerLifecycleEventObserver();
+        ReactNativeBitmovinPlayerModule.registerLifecycleEventObserver(
+          findNodeHandle(playerRef?.current || null)
+        );
       }
     }, []);
 

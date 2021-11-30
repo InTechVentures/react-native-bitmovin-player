@@ -29,7 +29,6 @@ import com.bitmovin.player.api.source.Source;
 import com.bitmovin.player.api.source.SourceConfig;
 import com.bitmovin.player.api.source.SourceType;
 import com.bitmovin.player.api.ui.FullscreenHandler;
-import com.bitmovin.player.api.ui.PictureInPictureHandler;
 import com.bitmovin.player.api.ui.StyleConfig;
 import com.bitmovin.player.ui.CustomMessageHandler;
 
@@ -131,6 +130,13 @@ public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerVi
         MapBuilder.of(
           "phasedRegistrationNames",
           MapBuilder.of("bubbled", "onPlay")
+        )
+      )
+      .put(
+        "onPipMode",
+        MapBuilder.of(
+          "phasedRegistrationNames",
+          MapBuilder.of("bubbled", "onPipMode")
         )
       )
       .put(
@@ -763,12 +769,6 @@ public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerVi
           "onFullscreenExit",
           map);
       }
-    });
-    _player.on(PlayerEvent.PictureInPictureExit.class, event -> {
-        Log.d("PlayerOn", "Exit Pip");
-    });
-    _player.on(PlayerEvent.PictureInPictureEnter.class, event -> {
-      Log.d("PlayerOn", "Enter Pip");
     });
   }
 

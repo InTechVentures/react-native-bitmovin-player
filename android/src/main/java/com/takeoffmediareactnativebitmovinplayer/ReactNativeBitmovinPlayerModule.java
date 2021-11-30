@@ -1,6 +1,5 @@
 package com.takeoffmediareactnativebitmovinplayer;
 
-import android.annotation.SuppressLint;
 import android.os.Build;
 import android.util.Log;
 import android.view.View;
@@ -17,15 +16,15 @@ import com.bitmovin.player.api.ui.ScalingMode;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
-import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.WritableMap;
-import com.facebook.react.modules.core.DeviceEventManagerModule;
+import com.facebook.react.uimanager.events.RCTEventEmitter;
 
 public class ReactNativeBitmovinPlayerModule extends ReactContextBaseJavaModule implements LifecycleEventObserver {
   private final ReactApplicationContext _reactContext;
   private boolean isPiPMode = false;
+  private int globalTag = 0;
 
   public ReactNativeBitmovinPlayerModule(ReactApplicationContext reactContext) {
     super(reactContext);
@@ -33,19 +32,10 @@ public class ReactNativeBitmovinPlayerModule extends ReactContextBaseJavaModule 
   }
 
   private void sendEvent(String eventName, @Nullable WritableMap params) {
-    _reactContext
-      .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-      .emit(eventName, params);
-  }
-
-  @ReactMethod
-  public void registerLifecycleEventObserver() {
-    AppCompatActivity activity = (AppCompatActivity) _reactContext.getCurrentActivity();
-    if (activity != null) {
-      activity.getLifecycle().addObserver(this);
-    } else {
-      Log.d(this.getName(), "App activity is null.");
-    }
+    _reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
+      globalTag,
+      eventName,
+      params);
   }
 
   @Override
@@ -60,8 +50,8 @@ public class ReactNativeBitmovinPlayerModule extends ReactContextBaseJavaModule 
         Log.d(this.getName(), "Activity pip mode has changed to " + isPiPMode);
         // Dispatch onPictureInPicutreModeChangedEvent to js.
         WritableMap params = Arguments.createMap();
-        params.putString("PiP_event", isPiPMode ? "EnterPiP" : "ExitPiP");
-        sendEvent("onPictureInPictureModeChanged", params);
+        params.putBoolean("value", isPiPMode);
+        sendEvent("onPipMode", params);
       }
     }
   }
@@ -69,6 +59,17 @@ public class ReactNativeBitmovinPlayerModule extends ReactContextBaseJavaModule 
   @Override
   public String getName() {
     return "ReactNativeBitmovinPlayer";
+  }
+
+  @ReactMethod
+  public void registerLifecycleEventObserver(int tag) {
+    globalTag = tag;
+    AppCompatActivity activity = (AppCompatActivity) _reactContext.getCurrentActivity();
+    if (activity != null) {
+      activity.getLifecycle().addObserver(this);
+    } else {
+      Log.d(this.getName(), "App activity is null.");
+    }
   }
 
   @ReactMethod
@@ -147,27 +148,6 @@ public class ReactNativeBitmovinPlayerModule extends ReactContextBaseJavaModule 
       throw new ClassCastException(String.format("Cannot exitFullscreen: view with tag #%d is not a ReactNativeBitmovinPlayer", tag));
     }
   }
-
-  @ReactMethod
-  public void enterPiP(int tag) {
-    View playerView = getCurrentActivity().findViewById(tag);
-    if (playerView instanceof  PlayerView) {
-      ((PlayerView) playerView).enterPictureInPicture();
-    } else {
-      throw new ClassCastException(String.format("Cannot enter in PictureInPicture Mode: view with tag #%d is not a ReactNativeBitmovinPlayer", tag));
-    }
-  }
-
-  @ReactMethod
-  public  void exitPiP(int tag) {
-    View playerView = getCurrentActivity().findViewById(tag);
-    if (playerView instanceof  PlayerView) {
-      ((PlayerView) playerView).exitPictureInPicture();
-    } else {
-      throw new ClassCastException(String.format("Cannot exit from PictureInPicture Mode: view with tag #%d is not a ReactNativeBitmovinPlayer", tag));
-    }
-  }
-
 
   @ReactMethod
   public void getCurrentTime(int tag, Promise promise) {
