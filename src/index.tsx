@@ -26,6 +26,12 @@ export type ReactNativeBitmovinPlayerMethodsType = {
   seekForwardCommand(): void;
 };
 
+type Subtitles = {
+  label: string;
+  language: string;
+  href: string;
+};
+
 type ReactNativeBitmovinPlayerType = {
   autoPlay: boolean;
   hasZoom: boolean;
@@ -60,7 +66,7 @@ type ReactNativeBitmovinPlayerType = {
     poster?: string;
     startOffset: number;
     hasNextEpisode: boolean;
-    subtitles?: string;
+    subtitles?: string | Subtitles[];
     thumbnails?: string;
     title?: string;
     subtitle?: string;

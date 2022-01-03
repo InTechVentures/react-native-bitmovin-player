@@ -5,9 +5,9 @@
 	<key>BitmovinPlayerLicenseKey</key>
 	<string>2ab6b979-f679-4c7d-8a18-b455e6e6992b</string>
 	<key>BitmovinPlayerCss</key>
-	<string>https://stagev2-app-assets.britbox.takeoffmedia.com/player/poc/css/bitmovinplayer-ui.min.css</string>
+	<string>http://localhost:9000/css/bitmovinplayer-ui.css</string>
 	<key>BitmovinPlayerJs</key>
-	<string>https://stagev2-app-assets.britbox.takeoffmedia.com/player/poc/js/bitmovinplayer-ui.min.js</string>
+	<string>http://localhost:9000/js/bitmovinplayer-ui.js</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>

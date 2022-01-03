@@ -22,7 +22,9 @@ import com.bitmovin.player.ui.CustomMessageHandler;
 import com.bitmovin.player.api.event.EventListener;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.LifecycleEventListener;
+import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.bridge.ReadableType;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.common.MapBuilder;
 import com.facebook.react.uimanager.SimpleViewManager;
@@ -41,6 +43,7 @@ import org.json.JSONObject;
 public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerView> implements FullscreenHandler, LifecycleEventListener {
 
   public static final String REACT_CLASS = "ReactNativeBitmovinPlayer";
+
 
   private SourceConfig sourceConfig;
   private BitmovinPlayerCollector analyticsCollector;
@@ -478,10 +481,35 @@ public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerVi
         sourceConfig.setPosterImage(Objects.requireNonNull(config.getString("poster")), false);
       }
 
-      if (config.getString("subtitles") != null) {
-        SubtitleTrack subtitleTrack = new SubtitleTrack(config.getString("subtitles"), "text/vtt", "en", "en", false, "en");
-        sourceConfig.addSubtitleTrack(subtitleTrack);
+      if (config.hasKey("subtitles")) {
+        ReadableType type = config.getType("subtitles");
+        if (type == ReadableType.String) {
+          if (config.getString("subtitles") != null) {
+            SubtitleTrack subtitleTrack = new SubtitleTrack(config.getString("subtitles"), "text/vtt", "en", "en", false, "en");
+            sourceConfig.addSubtitleTrack(subtitleTrack);
+          }
+        }
+        if (type == ReadableType.Array) {
+          ReadableArray subtitles = config.getArray("subtitles");
+          if (subtitles != null) {
+            for (int i = 0; i < subtitles.size(); i++) {
+              ReadableMap subtitle = subtitles.getMap(i);
+              assert subtitle != null;
+              SubtitleTrack subtitleTrack = new SubtitleTrack(
+                subtitle.getString("href"),
+                "text/vtt",
+                subtitle.getString("label"),
+                Objects.requireNonNull(subtitle.getString("language")),
+                false,
+                subtitle.getString("language")
+              );
+              sourceConfig.addSubtitleTrack(subtitleTrack);
+            }
+
+          }
+        }
       }
+
 
       if (config.hasKey("startOffset")) {
         sourceConfig.getOptions().setStartOffset(config.getDouble("startOffset"));

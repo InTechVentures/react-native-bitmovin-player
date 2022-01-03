@@ -38,13 +38,30 @@ final class ViewController: UIView {
         if((self.configuration!["poster"]) != nil) {
             config.sourceItem?.posterSource = URL.init(string: self.configuration!["poster"] as! String)!
         }
+
         if((self.configuration!["subtitles"]) != nil) {
-            let subtitleTrack = SubtitleTrack(url: URL(string: self.configuration!["subtitles"] as! String),
-              label: "en",
-              identifier: "en",
-              isDefaultTrack: false,
-              language: "en")
-            config.sourceItem?.add(subtitleTrack: subtitleTrack)
+            if (self.configuration!["subtitles"] is String) {
+                let subtitleTrack = SubtitleTrack(url: URL(string: self.configuration!["subtitles"] as! String),
+                  label: "English [CC]",
+                  identifier: "en",
+                  isDefaultTrack: false,
+                  language: "en")
+                config.sourceItem?.add(subtitleTrack: subtitleTrack)
+            }
+
+            if (self.configuration!["subtitles"] is [Any]) {
+                let items = self.configuration!["subtitles"] as! [[String: Any]]
+                for subtitle in items {
+                    print(subtitle["label"]!);
+                    let subtitleTrack = SubtitleTrack(url: URL(string: subtitle["href"] as! String),
+                      label: subtitle["label"] as! String,
+                      identifier: subtitle["language"] as! String,
+                      isDefaultTrack: false,
+                      language: subtitle["language"] as? String
+                    )
+                    config.sourceItem?.add(subtitleTrack: subtitleTrack)
+                }
+            }
         }
         if((self.configuration!["thumbnails"]) != nil) {
             let thumbnailsTrack = ThumbnailTrack(url: URL(string: self.configuration!["thumbnails"] as! String)!, label: "thumbnails", identifier: "thumbnails", isDefaultTrack: true)
