@@ -417,7 +417,7 @@ extension ViewController: PlayerListener {
         print("onError \(event.message)")
         let errorCallback = self.onError;
         if((errorCallback) != nil) {
-            errorCallback!(["message": event.message, "volume": self.player?.volume as Any, "duration": self.player?.duration as Any])
+            errorCallback!(["code": event.code, "message": event.message, "volume": self.player?.volume as Any, "duration": self.player?.duration as Any])
         }
     }
 }
