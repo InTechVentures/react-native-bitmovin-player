@@ -151,9 +151,9 @@ public class ReactNativeBitmovinPlayerModule extends ReactContextBaseJavaModule 
 
   @ReactMethod
   public void enterPiP(int tag) {
-    View playerView = getCurrentActivity().findViewById(tag);
-    if (playerView instanceof  PlayerView) {
-      ((PlayerView) playerView).enterPictureInPicture();
+    AppCompatActivity activity = (AppCompatActivity) _reactContext.getCurrentActivity();
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+      activity.enterPictureInPictureMode();
     } else {
       throw new ClassCastException(String.format("Cannot enter in PictureInPicture Mode: view with tag #%d is not a ReactNativeBitmovinPlayer", tag));
     }
