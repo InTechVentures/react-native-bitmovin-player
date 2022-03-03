@@ -1,8 +1,8 @@
 # @takeoffmedia/react-native-bitmovin-player
-## Installation
 
 #### Attention! This plugin is not official, the code is not provided or maintained by [Bitmovin](https://bitmovin.com)!
 
+## Installation
 ```sh
 npm install @takeoffmedia/react-native-bitmovin-player
 ```
