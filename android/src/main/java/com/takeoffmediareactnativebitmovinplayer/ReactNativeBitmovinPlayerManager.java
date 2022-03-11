@@ -42,7 +42,7 @@ import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<TextView> implements FullscreenHandler, LifecycleEventListener {
+public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerView> implements FullscreenHandler, LifecycleEventListener {
 
   public static final String REACT_CLASS = "ReactNativeBitmovinPlayer";
 
@@ -334,7 +334,7 @@ public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<TextView
 
   @NotNull
   @Override
-  public TextView createViewInstance(@NotNull ThemedReactContext context) {
+  public PlayerView createViewInstance(@NotNull ThemedReactContext context) {
     Log.d("BITMOVIN", "createViewinstance() PlayerView");
     _reactContext = context;
     try {
@@ -364,15 +364,15 @@ public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<TextView
     setListeners();
     nextCallback = false;
 
-    TextView text = new TextView(context);
-    text.setText("WOW THIS WORKS");
-    return text;
+//    TextView text = new TextView(context);
+//    text.setText("WOW THIS WORKS");
+    return _playerView;
 
   }
 
 
   @Override
-  public void onDropViewInstance(@NotNull TextView view) {
+  public void onDropViewInstance(@NotNull PlayerView view) {
     removeListeners();
     _playerView.onDestroy();
     Log.wtf("BITMOVIN", "Bitmovin onDropViewInstance()");
