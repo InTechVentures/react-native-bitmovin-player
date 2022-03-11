@@ -149,5 +149,8 @@
         }
       ]
     ]
+  },
+  "dependencies": {
+    "react-native-config": "^1.4.5"
   }
 }

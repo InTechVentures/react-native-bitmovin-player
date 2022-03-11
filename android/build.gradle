@@ -2,20 +2,38 @@ import com.android.builder.core.DefaultManifestParser // At the top of build.gra
 
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
-apply from: project(':react-native-config').projectDir.getPath() + "/dotenv.gradle"
+//apply plugin: 'kotlin-android-extensions'
+//apply from: project(':react-native-config').projectDir.getPath() + "/dotenv.gradle"
+
+
+ext {
+  minSdkVersion=21
+  targetSdkVersion=30
+  compileSdkVersion=30
+}
+
+configurations.all {
+  resolutionStrategy {
+    dependencySubstitution {
+      substitute module('org.koin:koin-android:2.2.2') using module("io.insert-koin:koin-android:2.2.3")
+    }
+  }
+}
 
 buildscript {
   // Buildscript is evaluated before everything else so we can't use getExtOrDefault
-  def kotlin_version = rootProject.ext.has('kotlinVersion') ? rootProject.ext.get('kotlinVersion') : project.properties['ReactNativeBitmovinPlayer_kotlinVersion']
+  def kotlin_version = rootProject.ext.has('kotlxinVersion') ? rootProject.ext.get('kotlinVersion') : project.properties['ReactNativeBitmovinPlayer_kotlinVersion']
 
   repositories {
+
     google()
     jcenter()
   }
 
+
+
   dependencies {
-    classpath 'com.android.tools.build:gradle:4.2.2'
+    classpath 'com.android.tools.build:gradle:4.2.0'
     // noinspection DifferentKotlinGradleVersion
     classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     classpath "org.jetbrains.kotlin:kotlin-android-extensions:$kotlin_version"
@@ -39,6 +57,10 @@ if (project.rootProject.file('local.properties').canRead()) {
 android {
   compileSdkVersion getExtOrIntegerDefault('compileSdkVersion')
   buildToolsVersion getExtOrDefault('buildToolsVersion')
+  buildFeatures {
+    viewBinding true
+  }
+
   defaultConfig {
     minSdkVersion 17
     targetSdkVersion getExtOrIntegerDefault('targetSdkVersion')
@@ -46,8 +68,8 @@ android {
     versionName "1.0"
     buildConfigField 'String', 'BITMOVIN_CSS', properties.getProperty('bitmovin.css', "\"\"")
     buildConfigField 'String', 'BITMOVIN_JS', properties.getProperty('bitmovin.js', "\"\"")
-    buildConfigField 'String', 'BITMOVIN_PLAYER_LICENSE_KEY', '"' + project.env.get("BITMOVIN_PLAYER_LICENSE_KEY") + '"'
-    buildConfigField 'String', 'BITMOVIN_ANALYTICS_LICENSE_KEY', '"' + project.env.get("BITMOVIN_ANALYTICS_LICENSE_KEY") + '"'
+//    buildConfigField 'String', 'BITMOVIN_PLAYER_LICENSE_KEY', '"' + project.env.get("BITMOVIN_PLAYER_LICENSE_KEY") + '"'
+//    buildConfigField 'String', 'BITMOVIN_ANALYTICS_LICENSE_KEY', '"' + project.env.get("BITMOVIN_ANALYTICS_LICENSE_KEY") + '"'
   }
 
   buildTypes {
@@ -69,10 +91,19 @@ android {
 
 repositories {
   mavenCentral()
-  jcenter()
   google()
-  maven { url 'http://bitmovin.bintray.com/maven' }
 
+  mavenCentral()
+//
+//  google()
+//
+//  maven { url 'https://maven.google.com' }
+
+//  maven { url 'http://bitmovin.bintray.com/maven' }
+
+  maven {
+    url 'https://artifacts.bitmovin.com/artifactory/public-releases'
+  }
   def found = false
   def defaultDir = null
   def androidSourcesName = 'React Native sources'
@@ -132,7 +163,7 @@ repositories {
   }
 
   if (!found) {
-    throw new GradleException(
+    throw new FileNotFoundException(
             "${project.name}: unable to locate React Native android sources. " +
                     "Ensure you have you installed React Native as a dependency in your project and try again."
     )
@@ -143,10 +174,15 @@ def kotlin_version = getExtOrDefault('kotlinVersion')
 
 dependencies {
   // noinspection GradleDynamicVersion
+  api "com.android.support:appcompat-v7:17"
+  api "com.android.support:recyclerview-v7:23.0.1"
+
+  implementation 'com.android.support:appcompat-v7:27.1.1'
+  implementation 'com.android.support:recyclerview-v7:23.0.1'
   api 'com.facebook.react:react-native:+'
   implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-  implementation 'com.bitmovin.player:player:3.6.0'
-  implementation 'com.bitmovin.analytics:collector-bitmovin-player:2.1.0'
+  implementation 'com.bitmovin.player:player:3.14.0'
+  implementation 'com.bitmovin.analytics:collector-bitmovin-player:2.6.0'
   implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
   implementation 'androidx.cardview:cardview:1.0.0'
 }

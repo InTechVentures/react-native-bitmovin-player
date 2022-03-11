@@ -207,6 +207,7 @@ public class ReactNativeBitmovinPlayerModule extends ReactContextBaseJavaModule 
   @ReactMethod
   public void setZoom(int tag, Promise promise) {
     View playerView = getCurrentActivity().findViewById(tag);
+    if(playerView == null) return;
 
     if (playerView instanceof PlayerView) {
       ((PlayerView) playerView).setScalingMode(ScalingMode.Zoom);

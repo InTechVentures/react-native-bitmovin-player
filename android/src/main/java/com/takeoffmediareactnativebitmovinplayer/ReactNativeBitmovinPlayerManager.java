@@ -2,7 +2,9 @@ package com.takeoffmediareactnativebitmovinplayer;
 
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.util.Log;
 import android.webkit.JavascriptInterface;
+import android.widget.TextView;
 
 import com.bitmovin.analytics.BitmovinAnalyticsConfig;
 import com.bitmovin.analytics.bitmovin.player.BitmovinPlayerCollector;
@@ -40,7 +42,7 @@ import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerView> implements FullscreenHandler, LifecycleEventListener {
+public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<TextView> implements FullscreenHandler, LifecycleEventListener {
 
   public static final String REACT_CLASS = "ReactNativeBitmovinPlayer";
 
@@ -332,13 +334,17 @@ public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerVi
 
   @NotNull
   @Override
-  public PlayerView createViewInstance(@NotNull ThemedReactContext context) {
+  public TextView createViewInstance(@NotNull ThemedReactContext context) {
+    Log.d("BITMOVIN", "createViewinstance() PlayerView");
     _reactContext = context;
     try {
       ApplicationInfo appInfo = context.getPackageManager().getApplicationInfo(context.getPackageName(),PackageManager.GET_META_DATA);
       String BITMOVIN_CSS = appInfo.metaData.getString("BITMOVIN_PLAYER_CSS");
       String BITMOVIN_JS = appInfo.metaData.getString("BITMOVIN_PLAYER_JS");
+      Log.wtf("BITMOVIN", "Got the BITMOVIN_CSS AND BITMOVIN_JS " + BITMOVIN_JS + " - CSS: " + BITMOVIN_CSS);
+
       if (!BITMOVIN_CSS.equals("") && !BITMOVIN_JS.equals("")) {
+        Log.d("BITMOVIN", "They are not empty");
         StyleConfig styleConfig = new StyleConfig();
         styleConfig.setPlayerUiCss(BITMOVIN_CSS);
         styleConfig.setPlayerUiJs(BITMOVIN_JS);
@@ -346,21 +352,30 @@ public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerVi
 
       }
     } catch (PackageManager.NameNotFoundException e) {
+      Log.d("BITMOVIN", "Player view had an exception");
       e.printStackTrace();
     }
+
+    Log.d("BITMOVIN",  "Creating the playerview");
     _player = Player.create(context, playerConfig);
     _playerView = new PlayerView(context, _player);
     _playerView.setCustomMessageHandler(customMessageHandler);
     _fullscreen = false;
     setListeners();
     nextCallback = false;
-    return _playerView;
+
+    TextView text = new TextView(context);
+    text.setText("WOW THIS WORKS");
+    return text;
+
   }
 
+
   @Override
-  public void onDropViewInstance(@NotNull PlayerView view) {
+  public void onDropViewInstance(@NotNull TextView view) {
     removeListeners();
     _playerView.onDestroy();
+    Log.wtf("BITMOVIN", "Bitmovin onDropViewInstance()");
     super.onDropViewInstance(view);
     _player = null;
     _playerView = null;
