@@ -4,6 +4,7 @@ import { Platform, StyleSheet } from 'react-native';
 import ReactNativeBitmovinPlayer, {
   ReactNativeBitmovinPlayerMethodsType,
 } from '@takeoffmedia/react-native-bitmovin-player';
+import { useState } from 'react';
 
 const videoUrl = Platform.select({
   ios:
@@ -17,6 +18,7 @@ const videoUrl = Platform.select({
 
 export default function App() {
   const playerRef = React.useRef<ReactNativeBitmovinPlayerMethodsType>();
+  const [isInPipMode, setIsInPipMode] = useState(false);
 
   return (
     <ReactNativeBitmovinPlayer
@@ -24,6 +26,7 @@ export default function App() {
       style={styles.container}
       autoPlay={false}
       hasZoom={false}
+      inPiPMode={isInPipMode}
       configuration={{
         title: 'It works',
         subtitle: 'S1 · E1',
@@ -95,6 +98,9 @@ export default function App() {
       }}
       onRewind={({ nativeEvent }) => {
         console.log({ nativeEvent });
+      }}
+      onPipMode={({ nativeEvent }) => {
+        setIsInPipMode(nativeEvent.value);
       }}
     />
   );

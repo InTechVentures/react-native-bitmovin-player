@@ -22,6 +22,8 @@ export type ReactNativeBitmovinPlayerMethodsType = {
   play(): void;
   pause(): void;
   destroy(): void;
+  enterPiP(): void;
+  exitPiP(): void;
   seekBackwardCommand(): void;
   seekForwardCommand(): void;
 };
@@ -36,6 +38,7 @@ type ReactNativeBitmovinPlayerType = {
   autoPlay: boolean;
   hasZoom: boolean;
   hasChromecast?: boolean;
+  inPiPMode?: boolean;
   style?: any;
   color?: string;
   onReady?: (event: any) => void;
@@ -61,6 +64,9 @@ type ReactNativeBitmovinPlayerType = {
   onFullscreenExit?: (event: any) => void;
   onControlsShow?: (event: any) => void;
   onControlsHide?: (event: any) => void;
+  // onPipMode?: (event: any) => void;
+  onPipMode?: (event: { nativeEvent: { value: boolean } }) => void;
+
   configuration: {
     url: string;
     poster?: string;
@@ -110,6 +116,7 @@ export default React.forwardRef<
       onReady,
       hasZoom,
       hasChromecast,
+      inPiPMode,
       autoPlay,
       style,
       ...props
@@ -120,6 +127,15 @@ export default React.forwardRef<
     const [layout, setLayout] = useState<LayoutRectangle | null>(null);
     const [loading, setLoading] = useState(false);
     const playerRef = useRef();
+
+    useEffect(() => {
+      if (Platform.OS === 'android') {
+        // Make native module listen for lifecycle events on the main activity.
+        ReactNativeBitmovinPlayerModule.registerLifecycleEventObserver(
+          findNodeHandle(playerRef?.current || null)
+        );
+      }
+    }, []);
 
     useEffect(() => {
       const { height } = layout || {};
@@ -268,6 +284,25 @@ export default React.forwardRef<
         findNodeHandle(playerRef.current || null)
       );
 
+    const enterPiP = () => {
+      if (Platform.OS === 'android') {
+        ReactNativeBitmovinPlayerModule.enterPiP(
+          findNodeHandle(playerRef.current || null)
+        );
+      } else {
+        ReactNativeBitmovinPlayerModule.enterPiP();
+      }
+    };
+    const exitPiP = () => {
+      if (Platform.OS === 'android') {
+        ReactNativeBitmovinPlayerModule.exitPiP(
+          findNodeHandle(playerRef.current || null)
+        );
+      } else {
+        ReactNativeBitmovinPlayerModule.exitPiP();
+      }
+    };
+
     useImperativeHandle(ref, () => ({
       play,
       pause,
@@ -289,6 +324,8 @@ export default React.forwardRef<
       isPaused,
       isStalled,
       isPlaying,
+      enterPiP,
+      exitPiP,
     }));
 
     const _onReady = (event: any) => {
@@ -324,6 +361,7 @@ export default React.forwardRef<
             autoPlay,
             hasZoom,
             hasChromecast,
+            inPiPMode,
             configuration: {
               ...DEFAULT_CONFIGURATION,
               ...configuration,
