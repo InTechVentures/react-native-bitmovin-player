@@ -1,8 +1,21 @@
 package com.takeoffmediareactnativebitmovinplayer;
 
+import android.app.Activity;
+import android.app.PendingIntent;
+import android.app.PictureInPictureParams;
+import android.app.RemoteAction;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.Icon;
+import android.os.Build;
 import android.webkit.JavascriptInterface;
+
+import androidx.annotation.DrawableRes;
+import androidx.annotation.RequiresApi;
 
 import com.bitmovin.analytics.BitmovinAnalyticsConfig;
 import com.bitmovin.analytics.bitmovin.player.BitmovinPlayerCollector;
@@ -20,6 +33,7 @@ import com.bitmovin.player.api.ui.FullscreenHandler;
 import com.bitmovin.player.api.ui.StyleConfig;
 import com.bitmovin.player.ui.CustomMessageHandler;
 import com.bitmovin.player.api.event.EventListener;
+import com.bitmovin.player.ui.DefaultPictureInPictureHandler;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.ReadableArray;
@@ -32,6 +46,7 @@ import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.annotations.ReactProp;
 import com.facebook.react.uimanager.events.RCTEventEmitter;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -40,6 +55,7 @@ import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+@RequiresApi(api = Build.VERSION_CODES.O)
 public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerView> implements FullscreenHandler, LifecycleEventListener {
 
   public static final String REACT_CLASS = "ReactNativeBitmovinPlayer";
@@ -50,7 +66,6 @@ public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerVi
   private PlayerView _playerView;
   private Player _player;
   private boolean _fullscreen;
-  private boolean _PiP;
   private ThemedReactContext _reactContext;
   private Integer heartbeat = 30;
   private Double offset = 0.0;
@@ -60,6 +75,16 @@ public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerVi
   private final PlayerConfig playerConfig = new PlayerConfig();
   private HashMap<String, String> metaDataMap = new HashMap<String, String>();
   private boolean playerShouldPause = true;
+  private BroadcastReceiver mReceiver;
+  private final PictureInPictureParams.Builder mPictureInPictureParamsBuilder =
+    new PictureInPictureParams.Builder();
+  private static final String ACTION_MEDIA_CONTROL = "media_control";
+  private static final String EXTRA_CONTROL_TYPE = "control_type";
+  private static final int REQUEST_PLAY = 1;
+  private static final int REQUEST_PAUSE = 2;
+  private static final int REQUEST_INFO = 3;
+  private static final int CONTROL_TYPE_PLAY = 1;
+  private static final int CONTROL_TYPE_PAUSE = 2;
 
   @NotNull
   @Override
@@ -109,6 +134,13 @@ public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerVi
         MapBuilder.of(
           "phasedRegistrationNames",
           MapBuilder.of("bubbled", "onPlay")
+        )
+      )
+      .put(
+        "onPipMode",
+        MapBuilder.of(
+          "phasedRegistrationNames",
+          MapBuilder.of("bubbled", "onPipMode")
         )
       )
       .put(
@@ -175,27 +207,6 @@ public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerVi
         )
       )
       .put(
-        "onPiPEnter",
-        MapBuilder.of(
-          "phasedRegistrationNames",
-          MapBuilder.of("bubbled", "onPiPAvailabilityChanged")
-        )
-      )
-      .put(
-        "onPiPEnter",
-        MapBuilder.of(
-          "phasedRegistrationNames",
-          MapBuilder.of("bubbled", "onPiPEnter")
-        )
-      )
-      .put(
-        "onPiPEnter",
-        MapBuilder.of(
-          "phasedRegistrationNames",
-          MapBuilder.of("bubbled", "onPiPExit")
-        )
-      )
-      .put(
         "onSeek",
         MapBuilder.of(
           "phasedRegistrationNames",
@@ -230,102 +241,111 @@ public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerVi
   Object javascriptInterface = new Object() {
     @JavascriptInterface
     public void closePlayerAsync(String data) {
-      WritableMap map = Arguments.createMap();
-      map.putString("message", "closePlayer");
-      map.putString("time", String.valueOf(_player.getCurrentTime()));
-      map.putString("volume", String.valueOf(_player.getVolume()));
-      map.putString("duration", String.valueOf(_player.getDuration()));
-      if (analyticsCollector != null) {
-        analyticsCollector.detachPlayer();
+      if (_player != null && _player.getSource() != null) {
+        WritableMap map = Arguments.createMap();
+        map.putString("message", "closePlayer");
+        map.putString("time", String.valueOf(_player.getCurrentTime()));
+        map.putString("volume", String.valueOf(_player.getVolume()));
+        map.putString("duration", String.valueOf(_player.getDuration()));
+        if (analyticsCollector != null) {
+          analyticsCollector.detachPlayer();
+        }
+        try {
+          _reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
+            _playerView.getId(),
+            "onEvent",
+            map);
+        } catch (Exception e) {
+          throw new ClassCastException(String.format("Cannot onEvent closePlater error message: %s", e.getMessage()));
+        }
+        removeListeners();
+        _player.unload();
+        _player.destroy();
       }
-      try {
-        _reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
-          _playerView.getId(),
-          "onEvent",
-          map);
-      } catch (Exception e) {
-        throw new ClassCastException(String.format("Cannot onEvent closePlater error message: %s", e.getMessage()));
-      }
-      removeListeners();
-      _player.unload();
-      _player.destroy();
     }
     @JavascriptInterface
     public void nextEpisodeAsync(String data) {
-      WritableMap map = Arguments.createMap();
-      map.putString("message", "nextEpisode");
-      map.putString("time", String.valueOf(_player.getCurrentTime()));
-      map.putString("volume", String.valueOf(_player.getVolume()));
-      map.putString("duration", String.valueOf(_player.getDuration()));
-      if (analyticsCollector != null) {
-        analyticsCollector.detachPlayer();
+      if (_player != null && _player.getSource() != null) {
+        WritableMap map = Arguments.createMap();
+        map.putString("message", "nextEpisode");
+        map.putString("time", String.valueOf(_player.getCurrentTime()));
+        map.putString("volume", String.valueOf(_player.getVolume()));
+        map.putString("duration", String.valueOf(_player.getDuration()));
+        if (analyticsCollector != null) {
+          analyticsCollector.detachPlayer();
+        }
+        try {
+          _reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
+            _playerView.getId(),
+            "onEvent",
+            map);
+        } catch (Exception e) {
+          throw new ClassCastException(String.format("Cannot onEvent nextEpisode error message: %s", e.getMessage()));
+        }
+        removeListeners();
+        _player.unload();
+        _player.destroy();
       }
-      try {
-        _reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
-          _playerView.getId(),
-          "onEvent",
-          map);
-      } catch (Exception e) {
-        throw new ClassCastException(String.format("Cannot onEvent nextEpisode error message: %s", e.getMessage()));
-      }
-      removeListeners();
-      _player.unload();
-      _player.destroy();
     }
     @JavascriptInterface
     public void chromecastAsync(String data) {
-      WritableMap map = Arguments.createMap();
-      map.putString("message", "chromecast");
-      map.putString("time", String.valueOf(_player.getCurrentTime()));
-      map.putString("volume", String.valueOf(_player.getVolume()));
-      map.putString("duration", String.valueOf(_player.getDuration()));
-      try {
-        _reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
-          _playerView.getId(),
-          "onChromecast",
-          map);
-      } catch (Exception e) {
-        throw new ClassCastException(String.format("Cannot onChromecast error message: %s", e.getMessage()));
+      if (_player != null && _player.getSource() != null) {
+        WritableMap map = Arguments.createMap();
+        map.putString("message", "chromecast");
+        map.putString("time", String.valueOf(_player.getCurrentTime()));
+        map.putString("volume", String.valueOf(_player.getVolume()));
+        map.putString("duration", String.valueOf(_player.getDuration()));
+        try {
+          _reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
+            _playerView.getId(),
+            "onChromecast",
+            map);
+        } catch (Exception e) {
+          throw new ClassCastException(String.format("Cannot onChromecast error message: %s", e.getMessage()));
+        }
       }
     }
     @JavascriptInterface
     public void forwardButtonAsync(String data) {
-      WritableMap map = Arguments.createMap();
-      map.putString("message", "forwardButton");
-      map.putString("time", String.valueOf(_player.getCurrentTime()));
-      map.putString("volume", String.valueOf(_player.getVolume()));
-      map.putString("duration", String.valueOf(_player.getDuration()));
-      _player.seek(_player.getCurrentTime() + 10);
+      if (_player != null && _player.getSource() != null) {
+        WritableMap map = Arguments.createMap();
+        map.putString("message", "forwardButton");
+        map.putString("time", String.valueOf(_player.getCurrentTime()));
+        map.putString("volume", String.valueOf(_player.getVolume()));
+        map.putString("duration", String.valueOf(_player.getDuration()));
+        _player.seek(_player.getCurrentTime() + 10);
 
-      customSeek = true;
-      try {
-        _reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
-          _playerView.getId(),
-          "onForward",
-          map);
-      } catch (Exception e) {
-        throw new ClassCastException(String.format("Cannot onForward error message: %s", e.getMessage()));
+        customSeek = true;
+        try {
+          _reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
+            _playerView.getId(),
+            "onForward",
+            map);
+        } catch (Exception e) {
+          throw new ClassCastException(String.format("Cannot onForward error message: %s", e.getMessage()));
+        }
       }
     }
     @JavascriptInterface
     public void rewindButtonAsync(String data) {
-      WritableMap map = Arguments.createMap();
-      map.putString("message", "rewindButton");
-      map.putString("time", String.valueOf(_player.getCurrentTime()));
-      map.putString("volume", String.valueOf(_player.getVolume()));
-      map.putString("duration", String.valueOf(_player.getDuration()));
-      _player.seek(_player.getCurrentTime() - 10);
-      customSeek = true;
-      try {
-        _reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
-          _playerView.getId(),
-          "onRewind",
-          map);
-      } catch (Exception e) {
-        throw new ClassCastException(String.format("Cannot onRewind error message: %s", e.getMessage()));
+      if (_player != null && _player.getSource() != null) {
+        WritableMap map = Arguments.createMap();
+        map.putString("message", "rewindButton");
+        map.putString("time", String.valueOf(_player.getCurrentTime()));
+        map.putString("volume", String.valueOf(_player.getVolume()));
+        map.putString("duration", String.valueOf(_player.getDuration()));
+        _player.seek(_player.getCurrentTime() - 10);
+        customSeek = true;
+        try {
+          _reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
+            _playerView.getId(),
+            "onRewind",
+            map);
+        } catch (Exception e) {
+          throw new ClassCastException(String.format("Cannot onRewind error message: %s", e.getMessage()));
+        }
       }
-    }
-  };
+    };
 
   // Setup CustomMessageHandler for communication with Bitmovin Web UI
   private final CustomMessageHandler customMessageHandler = new CustomMessageHandler(javascriptInterface);
@@ -336,12 +356,12 @@ public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerVi
     _reactContext = context;
     try {
       ApplicationInfo appInfo = context.getPackageManager().getApplicationInfo(context.getPackageName(),PackageManager.GET_META_DATA);
-      String BITMOVIN_CSS = appInfo.metaData.getString("BITMOVIN_PLAYER_CSS");
-      String BITMOVIN_JS = appInfo.metaData.getString("BITMOVIN_PLAYER_JS");
-      if (!BITMOVIN_CSS.equals("") && !BITMOVIN_JS.equals("")) {
+      String BITMOVIN_PLAYER_CSS = appInfo.metaData.getString("BITMOVIN_PLAYER_CSS");
+      String BITMOVIN_PLAYER_JS = appInfo.metaData.getString("BITMOVIN_PLAYER_JS");
+      if (!BITMOVIN_PLAYER_CSS.equals("") && !BITMOVIN_PLAYER_JS.equals("")) {
         StyleConfig styleConfig = new StyleConfig();
-        styleConfig.setPlayerUiCss(BITMOVIN_CSS);
-        styleConfig.setPlayerUiJs(BITMOVIN_JS);
+        styleConfig.setPlayerUiCss(BITMOVIN_PLAYER_CSS);
+        styleConfig.setPlayerUiJs(BITMOVIN_PLAYER_JS);
         playerConfig.setStyleConfig(styleConfig);
 
       }
@@ -351,10 +371,58 @@ public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerVi
     _player = Player.create(context, playerConfig);
     _playerView = new PlayerView(context, _player);
     _playerView.setCustomMessageHandler(customMessageHandler);
+    DefaultPictureInPictureHandler pictureInPictureHandler = new DefaultPictureInPictureHandler(_reactContext.getCurrentActivity(), _player);
+    _playerView.setPictureInPictureHandler(pictureInPictureHandler);
     _fullscreen = false;
     setListeners();
+    setReceiver();
     nextCallback = false;
     return _playerView;
+  }
+
+  private void setReceiver () {
+    mReceiver = new BroadcastReceiver() {
+      @Override
+      public void onReceive(Context context, Intent intent) {
+        if (intent == null
+          || !ACTION_MEDIA_CONTROL.equals(intent.getAction())) {
+          return;
+        }
+        final int controlType = intent.getIntExtra(EXTRA_CONTROL_TYPE, 0);
+        switch (controlType) {
+          case CONTROL_TYPE_PLAY:
+            _player.play();
+            updatePictureInPictureActions(
+              R.drawable.ic_pause_24dp, _reactContext.getString(R.string.pause), CONTROL_TYPE_PAUSE, REQUEST_PAUSE);
+            break;
+          case CONTROL_TYPE_PAUSE:
+            _player.pause();
+            updatePictureInPictureActions(
+              R.drawable.ic_play_arrow_24dp, _reactContext.getString(R.string.play), CONTROL_TYPE_PLAY, REQUEST_PLAY);
+            break;
+        }
+      }
+    };
+    _reactContext.registerReceiver(mReceiver, new IntentFilter(ACTION_MEDIA_CONTROL));
+  }
+
+  void updatePictureInPictureActions(
+    @DrawableRes int iconId, String title, int controlType, int requestCode) {
+    final ArrayList<RemoteAction> actions = new ArrayList<>();
+
+    final PendingIntent intent =
+      PendingIntent.getBroadcast(
+        _reactContext.getCurrentActivity(),
+        requestCode,
+        new Intent(ACTION_MEDIA_CONTROL).putExtra(EXTRA_CONTROL_TYPE, controlType),
+        0);
+
+    final Icon icon;
+    icon = Icon.createWithResource(_reactContext, iconId);
+    actions.add(new RemoteAction(icon, title, title, intent));
+    mPictureInPictureParamsBuilder.setActions(actions);
+    Activity mActivity = _reactContext.getCurrentActivity();
+    mActivity.setPictureInPictureParams(mPictureInPictureParamsBuilder.build());
   }
 
   @Override
@@ -551,6 +619,13 @@ public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerVi
     }
   }
 
+  @ReactProp(name = "inPiPMode")
+  public void setPiPMode(PlayerView view, Boolean inPiPMode) {
+    if(sourceConfig != null) {
+      customMessageHandler.sendMessage("pipModeButton", inPiPMode ? "true" : "false");
+    }
+  }
+
   @Override
   public void onResume() {}
   @Override
@@ -637,6 +712,8 @@ public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerVi
         _playerView.getId(),
         "onPlay",
         map);
+      updatePictureInPictureActions(
+        R.drawable.ic_pause_24dp, _reactContext.getString(R.string.pause), CONTROL_TYPE_PAUSE, REQUEST_PAUSE);
     }
   };
   private final EventListener<PlayerEvent.Paused> onPausedListener = event -> {
@@ -650,40 +727,45 @@ public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerVi
         _playerView.getId(),
         "onPause",
         map);
+      updatePictureInPictureActions(
+        R.drawable.ic_play_arrow_24dp, _reactContext.getString(R.string.play), CONTROL_TYPE_PLAY, REQUEST_PLAY);
     }
   };
+
   private final EventListener<PlayerEvent.TimeChanged> onTimeChangedListener = event -> {
     if(_player != null && _player.getSource() != null){
       // next
-      if (configuration != null && configuration.hasKey("nextPlayback") && event.getTime() != 0.0) {
-        if (event.getTime() <= _player.getDuration() - (configuration.getDouble("nextPlayback")) && nextCallback) {
-          nextCallback = false;
+      if (_player != null && _player.getSource() != null) {
+        if (configuration != null && configuration.hasKey("nextPlayback") && event.getTime() != 0.0) {
+          if (event.getTime() <= _player.getDuration() - (configuration.getDouble("nextPlayback")) && nextCallback) {
+            nextCallback = false;
+          }
+          if (event.getTime() > _player.getDuration() - (configuration.getDouble("nextPlayback")) && !nextCallback) {
+            nextCallback = true;
+            WritableMap map = Arguments.createMap();
+            map.putString("message", "next");
+            _reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
+              _playerView.getId(),
+              "onEvent",
+              map);
+          }
         }
-        if (event.getTime() > _player.getDuration() - (configuration.getDouble("nextPlayback")) && !nextCallback) {
-          nextCallback = true;
+        if((event.getTime() > (offset + heartbeat) || event.getTime() < (offset - heartbeat)) && event.getTime() < (_player.getDuration())) {
+          offset = event.getTime();
           WritableMap map = Arguments.createMap();
-          map.putString("message", "next");
+          map.putString("message", "save");
+          map.putString("time", String.valueOf(_player.getCurrentTime()));
+          map.putString("volume", String.valueOf(_player.getVolume()));
+          map.putString("duration", String.valueOf(_player.getDuration()));
           _reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
             _playerView.getId(),
             "onEvent",
             map);
         }
       }
-      // save
-      if((event.getTime() > (offset + heartbeat) || event.getTime() < (offset - heartbeat)) && event.getTime() < (_player.getDuration())) {
-        offset = event.getTime();
-        WritableMap map = Arguments.createMap();
-        map.putString("message", "save");
-        map.putString("time", String.valueOf(_player.getCurrentTime()));
-        map.putString("volume", String.valueOf(_player.getVolume()));
-        map.putString("duration", String.valueOf(_player.getDuration()));
-        _reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
-          _playerView.getId(),
-          "onEvent",
-          map);
-      }
-    }
+    };
   };
+
   private final EventListener<PlayerEvent.PlaybackFinished> onPlaybackFinishedistener = event -> {
     if(_player != null && _player.getSource() != null){
       WritableMap map = Arguments.createMap();

@@ -44,8 +44,9 @@ android {
     targetSdkVersion getExtOrIntegerDefault('targetSdkVersion')
     versionCode 1
     versionName "1.0"
-    buildConfigField 'String', 'BITMOVIN_CSS', properties.getProperty('bitmovin.css', "\"\"")
-    buildConfigField 'String', 'BITMOVIN_JS', properties.getProperty('bitmovin.js', "\"\"")
+    buildConfigField 'String', 'BITMOVIN_PLAYER_CSS', '"' + project.env.get("BITMOVIN_PLAYER_CSS") + '"'
+    buildConfigField 'String', 'BITMOVIN_PLAYER_JS', '"' + project.env.get("BITMOVIN_PLAYER_JS") + '"'
+
     buildConfigField 'String', 'BITMOVIN_PLAYER_LICENSE_KEY', '"' + project.env.get("BITMOVIN_PLAYER_LICENSE_KEY") + '"'
     buildConfigField 'String', 'BITMOVIN_ANALYTICS_LICENSE_KEY', '"' + project.env.get("BITMOVIN_ANALYTICS_LICENSE_KEY") + '"'
   }

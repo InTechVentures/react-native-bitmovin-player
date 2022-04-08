@@ -11,7 +11,11 @@ import com.facebook.soloader.SoLoader;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import com.takeoffmediareactnativebitmovinplayer.ReactNativeBitmovinPlayerPackage;
+
+import android.os.Build;
 import android.webkit.WebView;
+
+import androidx.annotation.RequiresApi;
 
 public class MainApplication extends Application implements ReactApplication {
 
@@ -43,6 +47,7 @@ public class MainApplication extends Application implements ReactApplication {
     return mReactNativeHost;
   }
 
+  @RequiresApi(api = Build.VERSION_CODES.KITKAT)
   @Override
   public void onCreate() {
     super.onCreate();

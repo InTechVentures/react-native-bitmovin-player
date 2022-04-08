@@ -13,6 +13,8 @@ RCT_EXTERN_METHOD(pause)
 RCT_EXTERN_METHOD(destroy)
 RCT_EXTERN_METHOD(seekBackwardCommand)
 RCT_EXTERN_METHOD(seekForwardCommand)
+RCT_EXTERN_METHOD(enterPiP)
+RCT_EXTERN_METHOD(exitPip)
 
 RCT_EXPORT_VIEW_PROPERTY(autoPlay, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(hasZoom, BOOL)
@@ -25,6 +27,7 @@ RCT_EXPORT_VIEW_PROPERTY(onPause, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onSeek, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onForward, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onRewind, RCTDirectEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(onPipMode, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(configuration, NSDictionary);
 RCT_EXPORT_VIEW_PROPERTY(analytics, NSDictionary);
 

@@ -17,12 +17,14 @@ final class ViewController: UIView {
 
     var analyticsCollector: BitmovinPlayerCollector? = nil
     var player: Player?
+    var playerView: BMPBitmovinPlayerView? = nil
     var nextCallback: Bool = false
     var customSeek: Bool = false
     var zoom: Bool = false
     var offset: TimeInterval = 0
     var hearbeat: Int = 10
     var drm: NSDictionary? = nil
+    var isInPipMode: Bool = false
 
     fileprivate var customMessageHandler: CustomMessageHandler?
     // Create player configuration
@@ -185,26 +187,31 @@ final class ViewController: UIView {
             config.styleConfiguration.playerUiJs = URL(string: plistDictionary!["BitmovinPlayerJs"] as! String)!
         }
 
+        if (plistDictionary!["BitmovinPlayerPIPEnabled"] != nil && plistDictionary!["BitmovinPlayerPIPEnabled"] as! Bool == true) {
+            config.playbackConfiguration.isBackgroundPlaybackEnabled = true;
+            config.playbackConfiguration.isPictureInPictureEnabled = true;
+        }
+
         config.styleConfiguration.userInterfaceConfiguration = bitmovinUserInterfaceConfiguration
 
         // Create player based on player configuration
         player = Player(configuration: config)
 
         // Create player view and pass the player instance to it
-        let playerView = BMPBitmovinPlayerView(player: player!, frame: .zero)
+        playerView = BMPBitmovinPlayerView(player: player!, frame: .zero)
 
         // Listen to player events
         player!.add(listener: self)
 
-        playerView.autoresizingMask = [.flexibleHeight, .flexibleWidth]
-        playerView.frame = frame
+        playerView!.autoresizingMask = [.flexibleHeight, .flexibleWidth]
+        playerView!.frame = frame
 
-        playerView.add(listener: self)
+        playerView!.add(listener: self)
 
         // Make sure that the correct audio session category is set to allow for background playback.
         handleAudioSessionCategorySetting()
-
-        self.addSubview(playerView)
+        configureAudioSession()
+        self.addSubview(playerView!)
     }
 
     @objc var onReady:RCTDirectEventBlock? = nil
@@ -216,6 +223,7 @@ final class ViewController: UIView {
     @objc var onSeek:RCTDirectEventBlock? = nil
     @objc var onForward:RCTDirectEventBlock? = nil
     @objc var onRewind:RCTDirectEventBlock? = nil
+    @objc var onPipMode:RCTDirectEventBlock? = nil
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
@@ -239,6 +247,11 @@ final class ViewController: UIView {
     @IBAction fileprivate func nextEpisodeButton(_ sender: Any) {
         // Use the configured customMessageHandler to send messages to the UI
         customMessageHandler?.sendMessage("nextEpisodeButton")
+    }
+
+    @IBAction fileprivate func pipModeButton(_ sender: Any) {
+        // Use the configured customMessageHandler to send messages to the UI
+        customMessageHandler?.sendMessage("pipModeButton", withData: String(isInPipMode))
     }
 
     fileprivate var bitmovinUserInterfaceConfiguration: BitmovinUserInterfaceConfiguration {
@@ -275,6 +288,18 @@ final class ViewController: UIView {
         }
     }
 
+    func enterPiP() -> Void {
+        DispatchQueue.main.async { [unowned self] in
+            playerView?.enterPictureInPicture()
+        }
+    }
+
+    func exitPiP() -> Void {
+        DispatchQueue.main.async { [unowned self] in
+            playerView?.exitPictureInPicture()
+        }
+    }
+
     func destroy() -> Void {
         DispatchQueue.main.async { [unowned self] in
             player?.destroy()
@@ -292,6 +317,13 @@ final class ViewController: UIView {
         } catch {
             print("Setting category to AVAudioSessionCategoryPlayback failed.")
         }
+    }
+    
+    private func configureAudioSession() {
+        // You need to set a category for audio session to '.playback'
+        // to be able to use PiP functionality, otherwise PiP won't work
+        let audioSession = AVAudioSession.sharedInstance()
+        try? audioSession.setCategory(.playback)
     }
 
 }
@@ -362,6 +394,31 @@ extension ViewController: UserInterfaceListener {
 
     func onControlsShow(_ event: ControlsShowEvent) {
         print("onControlsShow")
+    }
+
+    func onPictureInPictureEnter(_ event: PictureInPictureEnterEvent) {
+        print("onPictureInPictureEnter")
+        isInPipMode = true;
+        let onPipModeCallback = self.onPipMode;
+        if((onPipModeCallback) != nil) {
+            onPipModeCallback!(["value": isInPipMode])
+        }
+        pipModeButton(isInPipMode);
+    }
+    func onPictureInPictureEntered(_ event: PictureInPictureEnteredEvent) {
+        print("onPictureInPictureEntered")
+    }
+    func onPictureInPictureExit(_ event: PictureInPictureExitEvent) {
+        print("onPictureInPictureExit")
+        isInPipMode = false;
+        let onPipModeCallback = self.onPipMode;
+        if((onPipModeCallback) != nil) {
+            onPipModeCallback!(["value": isInPipMode])
+        }
+        pipModeButton(isInPipMode);
+    }
+    func onPictureInPictureExited(_ event: PictureInPictureExitedEvent) {
+        print("onPictureInPictureExited")
     }
 }
 
