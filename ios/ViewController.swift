@@ -264,6 +264,11 @@ final class ViewController: UIView {
         return bitmovinUserInterfaceConfiguration
     }
 
+    @objc(multiply:withB:withResolver:withRejecter:)
+        func multiply(a: Float, b: Float, resolve:RCTPromiseResolveBlock,reject:RCTPromiseRejectBlock) -> Void {
+            resolve(a*b)
+        }
+
     func play() -> Void {
         DispatchQueue.main.async { [unowned self] in
             player?.play()
@@ -286,6 +291,15 @@ final class ViewController: UIView {
         DispatchQueue.main.async { [unowned self] in
             player?.pause()
         }
+    }
+
+    @objc
+    func isPiPAvailable(_ resolve:RCTPromiseResolveBlock,rejecter:RCTPromiseRejectBlock) -> Void {
+        var isPipAvl = false;
+//        DispatchQueue.main.async { [unowned self] in
+        isPipAvl = ((playerView?.isPictureInPictureAvailable) != nil)
+        resolve(isPipAvl);
+  //      }
     }
 
     func enterPiP() -> Void {

@@ -345,7 +345,8 @@ public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerVi
           throw new ClassCastException(String.format("Cannot onRewind error message: %s", e.getMessage()));
         }
       }
-    };
+    }
+  };
 
   // Setup CustomMessageHandler for communication with Bitmovin Web UI
   private final CustomMessageHandler customMessageHandler = new CustomMessageHandler(javascriptInterface);

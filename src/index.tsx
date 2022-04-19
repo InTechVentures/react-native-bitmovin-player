@@ -22,6 +22,8 @@ export type ReactNativeBitmovinPlayerMethodsType = {
   play(): void;
   pause(): void;
   destroy(): void;
+  multiply(a: number, b:number): Promise<number>;
+  isPiPAvailable(): Promise<boolean> | undefined;
   enterPiP(): void;
   exitPiP(): void;
   seekBackwardCommand(): void;
@@ -64,7 +66,6 @@ type ReactNativeBitmovinPlayerType = {
   onFullscreenExit?: (event: any) => void;
   onControlsShow?: (event: any) => void;
   onControlsHide?: (event: any) => void;
-  // onPipMode?: (event: any) => void;
   onPipMode?: (event: { nativeEvent: { value: boolean } }) => void;
 
   configuration: {
@@ -284,6 +285,35 @@ export default React.forwardRef<
         findNodeHandle(playerRef.current || null)
       );
 
+    async function multiply (a: number, b:number) {
+      try {
+       ReactNativeBitmovinPlayerModule.multiply(a, b).then(
+         (res: any) => { console.log('multiply res:', res);
+         }
+       );
+      } catch (error) {
+        
+      }
+      return 3;
+    }
+
+    async function isPiPAvailable () {
+      try {
+        let isPipAvl: boolean;
+        if(Platform.OS === 'android') {
+          isPipAvl = ReactNativeBitmovinPlayerModule.isPiPAvailable(
+            findNodeHandle(playerRef.current || null)
+          );
+          return isPipAvl;
+        } else {
+          isPipAvl = await ReactNativeBitmovinPlayerModule.isPiPAvailable();
+          return isPipAvl;
+        }        
+      } catch (error) {
+        return false;
+      }
+    }
+   
     const enterPiP = () => {
       if (Platform.OS === 'android') {
         ReactNativeBitmovinPlayerModule.enterPiP(
@@ -293,6 +323,7 @@ export default React.forwardRef<
         ReactNativeBitmovinPlayerModule.enterPiP();
       }
     };
+
     const exitPiP = () => {
       if (Platform.OS === 'android') {
         ReactNativeBitmovinPlayerModule.exitPiP(
@@ -324,6 +355,8 @@ export default React.forwardRef<
       isPaused,
       isStalled,
       isPlaying,
+      isPiPAvailable,
+      multiply,
       enterPiP,
       exitPiP,
     }));
