@@ -253,7 +253,7 @@ PODS:
     - React-Core (= 0.63.4)
     - React-cxxreact (= 0.63.4)
     - React-jsi (= 0.63.4)
-  - takeoffmedia-react-native-bitmovin-player (0.2.3):
+  - takeoffmedia-react-native-bitmovin-player (0.2.4):
     - BitmovinAnalyticsCollector/BitmovinPlayer (= 1.20.0-beta2)
     - BitmovinAnalyticsCollector/Core (= 1.20.0-beta2)
     - BitmovinPlayer (= 2.66.0)
@@ -401,7 +401,7 @@ SPEC CHECKSUMS:
   React-RCTText: 5c51df3f08cb9dedc6e790161195d12bac06101c
   React-RCTVibration: ae4f914cfe8de7d4de95ae1ea6cc8f6315d73d9d
   ReactCommon: 73d79c7039f473b76db6ff7c6b159c478acbbb3b
-  takeoffmedia-react-native-bitmovin-player: c7453ed9d140d0fd7dd91e6f37c670c338a0693a
+  takeoffmedia-react-native-bitmovin-player: ef63330d6c13455e44d82a52589df8f2eaa30d32
   Yoga: 4bd86afe9883422a7c4028c00e34790f560923d6
 
 PODFILE CHECKSUM: 0dce38fa6844a638694078e679a2ffb8ee98535f
