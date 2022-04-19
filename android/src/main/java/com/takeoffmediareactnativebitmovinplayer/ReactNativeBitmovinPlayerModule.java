@@ -19,10 +19,12 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.uimanager.IllegalViewOperationException;
 import com.facebook.react.uimanager.events.RCTEventEmitter;
 
 public class ReactNativeBitmovinPlayerModule extends ReactContextBaseJavaModule implements LifecycleEventObserver {
 
+  private static final String E_PROMISE_ERROR = "PiP Error";
   private final ReactApplicationContext _reactContext;
   private boolean isPiPMode = false;
   private int globalTag = 0;
@@ -150,6 +152,23 @@ public class ReactNativeBitmovinPlayerModule extends ReactContextBaseJavaModule 
       throw new ClassCastException(String.format("Cannot exitFullscreen: view with tag #%d is not a ReactNativeBitmovinPlayer", tag));
     }
   }
+
+  @ReactMethod
+  public void isPiPAvailable(int tag, Promise promise) {
+    View playerView = getCurrentActivity().findViewById(tag);
+    boolean isPiPAvl = false;
+    try {
+      if (playerView instanceof PlayerView) {
+        isPiPAvl = ((PlayerView) playerView).isPictureInPictureAvailable();
+      } else {
+        throw new ClassCastException(String.format("Cannot return isPipAvailable: view with tag #%d is not a ReactNativeBitmovinPlayer", tag));
+      }
+      promise.resolve(isPiPAvl);
+    } catch (IllegalViewOperationException e) {
+      promise.reject(E_PROMISE_ERROR, e);
+    }
+  }
+
 
   @ReactMethod
   public void enterPiP(int tag) {

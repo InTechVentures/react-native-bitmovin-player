@@ -62,3 +62,4 @@ lib/
 # react-native-config codegen
 ios/tmp.xcconfig
 example/ios/tmp.xcconfig
+.env

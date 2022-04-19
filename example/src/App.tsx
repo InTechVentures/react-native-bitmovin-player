@@ -1,10 +1,10 @@
 import * as React from 'react';
 
-import { Platform, StyleSheet } from 'react-native';
+import { Platform, StyleSheet, AppState as AppStateRN } from 'react-native';
 import ReactNativeBitmovinPlayer, {
   ReactNativeBitmovinPlayerMethodsType,
 } from '@takeoffmedia/react-native-bitmovin-player';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const videoUrl = Platform.select({
   ios:
@@ -19,6 +19,42 @@ const videoUrl = Platform.select({
 export default function App() {
   const playerRef = React.useRef<ReactNativeBitmovinPlayerMethodsType>();
   const [isInPipMode, setIsInPipMode] = useState(false);
+  const [isPlaying, setisPlaying] = useState(false);
+  const [isPipAvailable, setisPipAvailable] = useState(false);
+
+  async function getIsPipAvailable() {
+    try {
+      if (playerRef.current) {
+        const isPipAvl = (await playerRef.current.isPiPAvailable()) || false;
+        setisPipAvailable(isPipAvl);
+        console.log('isPipAvl: ', isPipAvl);
+      }
+    } catch (error) {
+      console.log('isPipAvailable error:', error);
+      setisPipAvailable(false);
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      //
+    };
+  }, []);
+
+  useEffect(() => {
+    AppStateRN.addEventListener('change', (action) => {
+      // console.log(isPlaying);
+      if (action === 'background' && isPlaying && isPipAvailable) {
+        if (playerRef.current) {
+          playerRef.current.enterPiP();
+        }
+      }
+    });
+
+    return () => {
+      AppStateRN.removeEventListener('change', () => {});
+    };
+  }, []);
 
   return (
     <ReactNativeBitmovinPlayer
@@ -80,15 +116,18 @@ export default function App() {
       }}
       onReady={({ nativeEvent }) => {
         console.log({ nativeEvent });
+        getIsPipAvailable();
       }}
       onEvent={({ nativeEvent }) => {
         console.log({ nativeEvent });
       }}
       onPause={({ nativeEvent }) => {
         console.log({ nativeEvent });
+        setisPlaying(false);
       }}
       onPlay={({ nativeEvent }) => {
         console.log({ nativeEvent });
+        setisPlaying(true);
       }}
       onSeek={({ nativeEvent }) => {
         console.log({ nativeEvent });

@@ -7,8 +7,14 @@ class ReactNativeBitmovinPlayer: RCTViewManager {
     var playerView: ViewController?
     @objc(multiply:withB:withResolver:withRejecter:)
     func multiply(a: Float, b: Float, resolve:RCTPromiseResolveBlock,reject:RCTPromiseRejectBlock) -> Void {
-        resolve(a*b)
+        playerView?.multiply(a: a, b: b, resolve: resolve, reject: reject)
     }
+    
+//    @objc(withResolver:withRejecter:)
+//    func isPiPAvailable(resolve:RCTPromiseResolveBlock,reject:RCTPromiseRejectBlock) -> Void {
+//        playerView?.isPiPAvailable(resolve: resolve, reject: reject)
+//    }
+
 
     override func view() -> UIView! {
         playerView = ViewController()
@@ -42,6 +48,11 @@ class ReactNativeBitmovinPlayer: RCTViewManager {
     @objc(seekForwardCommand)
     func seekForwardCommand() -> Void {
         playerView?.seekForwardCommand()
+    }
+    
+    @objc
+    func isPiPAvailable(_ resolve:RCTPromiseResolveBlock, rejecter:RCTPromiseRejectBlock) -> Void {
+        playerView?.isPiPAvailable(resolve, rejecter: rejecter)
     }
 
     @objc(enterPiP)
