@@ -18,6 +18,7 @@ import com.bitmovin.player.api.media.thumbnail.ThumbnailTrack;
 import com.bitmovin.player.api.source.Source;
 import com.bitmovin.player.api.source.SourceConfig;
 import com.bitmovin.player.api.source.SourceType;
+
 import com.bitmovin.player.api.ui.FullscreenHandler;
 import com.bitmovin.player.api.ui.StyleConfig;
 import com.bitmovin.player.ui.CustomMessageHandler;
@@ -25,6 +26,7 @@ import com.bitmovin.player.api.event.EventListener;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.ReadableArray;
+import com.facebook.react.bridge.ReadableMapKeySetIterator;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.ReadableType;
 import com.facebook.react.bridge.WritableMap;
@@ -34,6 +36,16 @@ import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.annotations.ReactProp;
 import com.facebook.react.uimanager.events.RCTEventEmitter;
 
+import java.net.CookiePolicy;
+import java.net.CookieHandler;
+import java.net.CookieManager;
+import java.net.CookieStore;
+import java.net.HttpCookie;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -62,6 +74,15 @@ public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerVi
   private final PlayerConfig playerConfig = new PlayerConfig();
   private HashMap<String, String> metaDataMap = new HashMap<String, String>();
   private boolean playerShouldPause = true;
+
+  private static final CookieManager DEFAULT_COOKIE_MANAGER;
+  static {
+    DEFAULT_COOKIE_MANAGER = new CookieManager();
+    /** Here we can set a cookie policy.
+     * Either `ACCEPT_ALL` or `ACCEPT_ORIGINAL_SERVER`, both should do the trick in this case.
+     **/
+    DEFAULT_COOKIE_MANAGER.setCookiePolicy(CookiePolicy.ACCEPT_ALL);
+  }
 
   @NotNull
   @Override
@@ -448,15 +469,58 @@ public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerVi
     }
   }
 
+
   @ReactProp(name = "configuration")
-  public void setConfiguration(PlayerView view, ReadableMap config) {
+  public void setConfiguration(PlayerView view, ReadableMap config) throws MalformedURLException, URISyntaxException {
     configuration = config;
     String advisory;
+    ReadableMap cookies;
     boolean hasNextEpisode;
 
     if (config != null && config.getString("url") != null) {
 
       hasNextEpisode = config.getBoolean("hasNextEpisode");
+
+      if (config.hasKey("cookies")) {
+        Log.d("mani", "Has cookies");
+
+
+        if (CookieHandler.getDefault() != DEFAULT_COOKIE_MANAGER) {
+          CookieHandler.setDefault(DEFAULT_COOKIE_MANAGER);
+        }
+        
+        // CookieManager cookieManager = CookieHandler.getDefault();
+        URL cookieUrl = new URL(config.getString("url"));
+      
+        Log.d("mani", "got the url:"+cookieUrl.toString());
+        URI domain = new URI(cookieUrl.getProtocol() + "://" + cookieUrl.getHost());
+
+        Log.d("mani", "got the cookie"+ domain.toString());
+
+        ArrayList<HttpCookie> cookiesToAdd = new ArrayList();
+        ReadableMap cookiesMap = config.getMap("cookies");
+        ReadableMapKeySetIterator iterator = cookiesMap.keySetIterator();
+        while (iterator.hasNextKey()) {
+          String key = iterator.nextKey();
+          Log.d("mani", "got cookie key" + key);
+          Log.d("mani", "value of cookie keyt is"+ cookiesMap.getString(key)); 
+          HttpCookie cookie = new HttpCookie(key, cookiesMap.getString(key));
+          cookie.setVersion(0);
+          cookiesToAdd.add(cookie);
+        }
+        
+        Log.d("mani", "added nornmal cookie");
+
+        // cookiesToAdd.add(new HttpCookie("from-bitmovin", "willuwork"));
+
+
+        CookieStore cookieStore = DEFAULT_COOKIE_MANAGER.getCookieStore();
+        for (HttpCookie cookie : cookiesToAdd) {
+          Log.d("mani", "adding to domain: " + domain.toString());
+
+          cookieStore.add(domain, cookie);
+        }
+      }
 
       if (config.hasKey("hearbeat")) {
         heartbeat = (int)config.getDouble("hearbeat");
