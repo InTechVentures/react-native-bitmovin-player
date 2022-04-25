@@ -356,16 +356,13 @@ public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerVi
   @NotNull
   @Override
   public PlayerView createViewInstance(@NotNull ThemedReactContext context) {
-    Log.d("BITMOVIN", "createViewinstance() PlayerView");
     _reactContext = context;
     try {
       ApplicationInfo appInfo = context.getPackageManager().getApplicationInfo(context.getPackageName(),PackageManager.GET_META_DATA);
       String BITMOVIN_CSS = appInfo.metaData.getString("BITMOVIN_PLAYER_CSS");
       String BITMOVIN_JS = appInfo.metaData.getString("BITMOVIN_PLAYER_JS");
-      Log.wtf("BITMOVIN", "Got the BITMOVIN_CSS AND BITMOVIN_JS " + BITMOVIN_JS + " - CSS: " + BITMOVIN_CSS);
 
       if (!BITMOVIN_CSS.equals("") && !BITMOVIN_JS.equals("")) {
-        Log.d("BITMOVIN", "They are not empty");
         StyleConfig styleConfig = new StyleConfig();
         styleConfig.setPlayerUiCss(BITMOVIN_CSS);
         styleConfig.setPlayerUiJs(BITMOVIN_JS);
@@ -373,11 +370,9 @@ public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerVi
 
       }
     } catch (PackageManager.NameNotFoundException e) {
-      Log.d("BITMOVIN", "Player view had an exception");
       e.printStackTrace();
     }
 
-    Log.d("BITMOVIN",  "Creating the playerview");
     _player = Player.create(context, playerConfig);
     _playerView = new PlayerView(context, _player);
     _playerView.setCustomMessageHandler(customMessageHandler);
@@ -385,8 +380,6 @@ public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerVi
     setListeners();
     nextCallback = false;
 
-//    TextView text = new TextView(context);
-//    text.setText("WOW THIS WORKS");
     return _playerView;
 
   }
@@ -396,7 +389,6 @@ public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerVi
   public void onDropViewInstance(@NotNull PlayerView view) {
     removeListeners();
     _playerView.onDestroy();
-    Log.wtf("BITMOVIN", "Bitmovin onDropViewInstance()");
     super.onDropViewInstance(view);
     _player = null;
     _playerView = null;
@@ -482,41 +474,28 @@ public class ReactNativeBitmovinPlayerManager extends SimpleViewManager<PlayerVi
       hasNextEpisode = config.getBoolean("hasNextEpisode");
 
       if (config.hasKey("cookies")) {
-        Log.d("mani", "Has cookies");
-
-
         if (CookieHandler.getDefault() != DEFAULT_COOKIE_MANAGER) {
           CookieHandler.setDefault(DEFAULT_COOKIE_MANAGER);
         }
         
-        // CookieManager cookieManager = CookieHandler.getDefault();
         URL cookieUrl = new URL(config.getString("url"));
-      
-        Log.d("mani", "got the url:"+cookieUrl.toString());
         URI domain = new URI(cookieUrl.getProtocol() + "://" + cookieUrl.getHost());
-
-        Log.d("mani", "got the cookie"+ domain.toString());
 
         ArrayList<HttpCookie> cookiesToAdd = new ArrayList();
         ReadableMap cookiesMap = config.getMap("cookies");
         ReadableMapKeySetIterator iterator = cookiesMap.keySetIterator();
         while (iterator.hasNextKey()) {
           String key = iterator.nextKey();
-          Log.d("mani", "got cookie key" + key);
-          Log.d("mani", "value of cookie keyt is"+ cookiesMap.getString(key)); 
+
           HttpCookie cookie = new HttpCookie(key, cookiesMap.getString(key));
           cookie.setVersion(0);
+
           cookiesToAdd.add(cookie);
         }
         
-        Log.d("mani", "added nornmal cookie");
-
-        // cookiesToAdd.add(new HttpCookie("from-bitmovin", "willuwork"));
-
 
         CookieStore cookieStore = DEFAULT_COOKIE_MANAGER.getCookieStore();
         for (HttpCookie cookie : cookiesToAdd) {
-          Log.d("mani", "adding to domain: " + domain.toString());
 
           cookieStore.add(domain, cookie);
         }
