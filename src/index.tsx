@@ -66,6 +66,7 @@ type ReactNativeBitmovinPlayerType = {
     poster?: string;
     startOffset: number;
     hasNextEpisode: boolean;
+    cookies?: Record<string, string>;
     subtitles?: string | Subtitles[];
     thumbnails?: string;
     title?: string;
